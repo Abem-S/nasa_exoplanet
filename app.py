@@ -7,6 +7,8 @@ import numpy as np
 # Load model & threshold
 model = joblib.load("lgb_model.pkl")
 threshold = joblib.load("threshold.pkl")
+scaler = joblib.load("scaler.pkl")
+
 
 # Define expected features
 feature_cols = [
@@ -15,6 +17,13 @@ feature_cols = [
     "stellar_teff", "stellar_radius", "stellar_mag", 
     "fpflag_nt", "fpflag_ss", "fpflag_co", "fpflag_ec"
 ]
+
+num_cols = [
+    "orbital_period", "transit_duration", "transit_depth",
+    "planet_radius", "insolation_flux", "equilibrium_temp",
+    "stellar_teff", "stellar_radius", "stellar_mag"
+]
+
 
 # Create FastAPI app
 app = FastAPI(title="Exoplanet Classifier API")
@@ -40,11 +49,14 @@ class PlanetData(BaseModel):
     fpflag_co: int = 0
     fpflag_ec: int = 0
 
-# Prediction endpoint
+#Prediction endpoint
 @app.post("/predict")
 def predict_planet(data: PlanetData):
     # Convert input to DataFrame
     df = pd.DataFrame([data.dict()])
+
+    #numerical feature scaling
+    df[num_cols] = scaler.transform(df[num_cols].to_numpy())
 
     # Check for missing features
     missing_cols = [col for col in feature_cols if col not in df.columns]
